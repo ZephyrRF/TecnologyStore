@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Nuevo Equipo · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Nuevo Equipo</h1>
+            <div class="subtitle">Completa los datos para registrar el equipo</div>
+        </div>
+        <a href="/equipos" class="btn btn-ghost">← Volver</a>
+    </div>
+
+    <div class="card fade-up delay-1">
+        <form id="formCrear" class="form-grid">
+            <div class="form-group">
+                <label>Nombre del Equipo *</label>
+                <input type="text" name="nombre" class="form-control" placeholder="Ej: Laptop Dell XPS 15" required>
+            </div>
+            <div class="form-group">
+                <label>Marca</label>
+                <input type="text" name="marca" class="form-control" placeholder="Ej: Dell, HP, Lenovo…">
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Categoría *</label>
+                    <select name="categoria" class="form-control" required>
+                        <option value="">Seleccionar categoría…</option>
+                        <% categorias.forEach(cat => { %>
+                            <option value="<%= cat._id %>"><%= cat.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Proveedor</label>
+                    <select name="proveedor" class="form-control">
+                        <option value="">Sin proveedor</option>
+                        <% proveedores.forEach(prov => { %>
+                            <option value="<%= prov._id %>"><%= prov.nombre_empresa %></option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Precio</label>
+                    <input type="number" name="precio" class="form-control" placeholder="0" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" name="stock" class="form-control" placeholder="0" min="0">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Guardar Equipo
+                </button>
+                <a href="/equipos" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('formCrear').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    const data = Object.fromEntries(new FormData(e.target).entries());
+    // Remove empty optional fields
+    if (!data.proveedor) delete data.proveedor;
+    try {
+        const res = await fetch('/api/equipos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('¡Equipo creado!', `"${data.nombre}" fue registrado correctamente.`);
+            setTimeout(() => window.location.href = '/equipos', 1600);
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast('Error al guardar', err.message || 'Verifica los campos.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Guardar Equipo';
+        }
+    } catch {
+        showToast('Error de red', 'No se pudo conectar al servidor.', 'error');
+        btn.disabled = false;
+    }
+});
+</script>
+</body>
+</html>

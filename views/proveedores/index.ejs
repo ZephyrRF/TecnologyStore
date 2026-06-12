@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Proveedores · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Proveedores</h1>
+            <div class="subtitle" id="contador"><%= proveedores.length %> proveedor<%= proveedores.length !== 1 ? 'es' : '' %> registrado<%= proveedores.length !== 1 ? 's' : '' %></div>
+        </div>
+        <a href="/proveedores/nuevo" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo Proveedor
+        </a>
+    </div>
+
+    <!-- BARRA DE BÚSQUEDA -->
+    <div class="search-bar-wrap fade-up">
+        <div class="search-input-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Buscar por empresa, contacto o país…"
+                autocomplete="off"
+            />
+            <button class="search-clear" id="clearBtn" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+        </div>
+    </div>
+
+    <div class="table-wrap fade-up delay-1">
+        <% if (proveedores.length === 0) { %>
+            <div class="empty">
+                <div class="empty-icon">🏭</div>
+                <p>No hay proveedores registrados aún.</p>
+            </div>
+        <% } else { %>
+        <table id="tablaProveedores">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Contacto</th>
+                    <th>País</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyProveedores">
+                <% proveedores.forEach(prov => { %>
+                <tr
+                    data-empresa="<%= (prov.nombre_empresa || '').toLowerCase() %>"
+                    data-contacto="<%= (prov.contacto || '').toLowerCase() %>"
+                    data-pais="<%= (prov.pais || '').toLowerCase() %>"
+                >
+                    <td><strong><%= prov.nombre_empresa %></strong></td>
+                    <td style="color:var(--text-muted)"><%= prov.contacto || '—' %></td>
+                    <td><span class="badge"><%= prov.pais || '—' %></span></td>
+                    <td style="display:flex;gap:6px;">
+                        <a href="/proveedores/editar/<%= prov._id %>" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="eliminar('<%= prov._id %>', '<%= prov.nombre_empresa %>')" class="btn btn-danger btn-sm">Borrar</button>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <div class="empty" id="sinResultados" style="display:none;">
+            <div class="empty-icon">🔍</div>
+            <p>No se encontraron proveedores que coincidan con la búsqueda.</p>
+        </div>
+        <% } %>
+    </div>
+</div>
+<script>
+const searchInput   = document.getElementById('searchInput');
+const clearBtn      = document.getElementById('clearBtn');
+const tbody         = document.getElementById('tbodyProveedores');
+const sinResultados = document.getElementById('sinResultados');
+const contador      = document.getElementById('contador');
+const totalProveedores = <%= proveedores.length %>;
+
+function filtrar() {
+    const q = searchInput.value.trim().toLowerCase();
+    clearBtn.style.display = q ? 'flex' : 'none';
+
+    if (!tbody) return;
+    const filas = tbody.querySelectorAll('tr');
+    let visibles = 0;
+
+    filas.forEach(fila => {
+        const campos = [fila.dataset.empresa, fila.dataset.contacto, fila.dataset.pais];
+        const coincide = !q || campos.some(c => c && c.includes(q));
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+
+    if (sinResultados) {
+        sinResultados.style.display = (visibles === 0 && q) ? 'block' : 'none';
+    }
+
+    if (contador) {
+        if (q) {
+            contador.textContent = `${visibles} resultado${visibles !== 1 ? 's' : ''} de ${totalProveedores} proveedor${totalProveedores !== 1 ? 'es' : ''}`;
+        } else {
+            contador.textContent = `${totalProveedores} proveedor${totalProveedores !== 1 ? 'es' : ''} registrado${totalProveedores !== 1 ? 's' : ''}`;
+        }
+    }
+}
+
+function clearSearch() {
+    searchInput.value = '';
+    filtrar();
+    searchInput.focus();
+}
+
+if (searchInput) {
+    searchInput.addEventListener('input', filtrar);
+    filtrar();
+}
+
+async function eliminar(id, nombre) {
+    if (!confirm(`¿Eliminar el proveedor "${nombre}"?`)) return;
+    try {
+        const res = await fetch(`/api/proveedores/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Proveedor eliminado', `"${nombre}" fue removido.`);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast('Error', 'No se pudo eliminar.', 'error');
+        }
+    } catch { showToast('Error de red', '', 'error'); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Equipos · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Gestión de Equipos</h1>
+            <div class="subtitle" id="contador"><%= equipos.length %> equipo<%= equipos.length !== 1 ? 's' : '' %> registrado<%= equipos.length !== 1 ? 's' : '' %></div>
+        </div>
+        <a href="/equipos/nuevo" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Añadir Equipo
+        </a>
+    </div>
+
+    <!-- BARRA DE BÚSQUEDA -->
+    <div class="search-bar-wrap fade-up">
+        <div class="search-input-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Buscar por nombre, marca, categoría o proveedor…"
+                autocomplete="off"
+            />
+            <button class="search-clear" id="clearBtn" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+        </div>
+    </div>
+
+    <div class="table-wrap fade-up delay-1">
+        <% if (equipos.length === 0) { %>
+            <div class="empty">
+                <div class="empty-icon">📦</div>
+                <p>No hay equipos registrados aún.</p>
+            </div>
+        <% } else { %>
+        <table id="tablaEquipos">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Marca</th>
+                    <th>Categoría</th>
+                    <th>Proveedor</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyEquipos">
+                <% equipos.forEach(equipo => { %>
+                <tr
+                    data-nombre="<%= (equipo.nombre || '').toLowerCase() %>"
+                    data-marca="<%= (equipo.marca || '').toLowerCase() %>"
+                    data-categoria="<%= (equipo.categoria ? equipo.categoria.nombre : '').toLowerCase() %>"
+                    data-proveedor="<%= (equipo.proveedor ? equipo.proveedor.nombre_empresa : '').toLowerCase() %>"
+                >
+                    <td><strong><%= equipo.nombre %></strong></td>
+                    <td><span class="badge"><%= equipo.marca || '—' %></span></td>
+                    <td><span class="badge badge-purple"><%= equipo.categoria ? equipo.categoria.nombre : 'Sin categoría' %></span></td>
+                    <td><span class="badge badge-blue"><%= equipo.proveedor ? equipo.proveedor.nombre_empresa : '—' %></span></td>
+                    <td><%= equipo.precio != null ? '$' + Number(equipo.precio).toLocaleString('es') : '—' %></td>
+                    <td><span class="badge <%= equipo.stock > 0 ? 'badge-green' : '' %>"><%= equipo.stock != null ? equipo.stock : '—' %></span></td>
+                    <td style="display:flex;gap:6px;">
+                        <a href="/equipos/editar/<%= equipo._id %>" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="eliminar('<%= equipo._id %>', '<%= equipo.nombre %>')" class="btn btn-danger btn-sm">Borrar</button>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <div class="empty" id="sinResultados" style="display:none;">
+            <div class="empty-icon">🔍</div>
+            <p>No se encontraron equipos que coincidan con la búsqueda.</p>
+        </div>
+        <% } %>
+    </div>
+</div>
+<script>
+const searchInput = document.getElementById('searchInput');
+const clearBtn    = document.getElementById('clearBtn');
+const tbody       = document.getElementById('tbodyEquipos');
+const sinResultados = document.getElementById('sinResultados');
+const contador    = document.getElementById('contador');
+const totalEquipos = <%= equipos.length %>;
+
+function filtrar() {
+    const q = searchInput.value.trim().toLowerCase();
+    clearBtn.style.display = q ? 'flex' : 'none';
+
+    if (!tbody) return;
+    const filas = tbody.querySelectorAll('tr');
+    let visibles = 0;
+
+    filas.forEach(fila => {
+        const campos = [
+            fila.dataset.nombre,
+            fila.dataset.marca,
+            fila.dataset.categoria,
+            fila.dataset.proveedor
+        ];
+        const coincide = !q || campos.some(c => c && c.includes(q));
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+
+    if (sinResultados) {
+        sinResultados.style.display = (visibles === 0 && q) ? 'block' : 'none';
+    }
+
+    if (contador) {
+        if (q) {
+            contador.textContent = `${visibles} resultado${visibles !== 1 ? 's' : ''} de ${totalEquipos} equipo${totalEquipos !== 1 ? 's' : ''}`;
+        } else {
+            contador.textContent = `${totalEquipos} equipo${totalEquipos !== 1 ? 's' : ''} registrado${totalEquipos !== 1 ? 's' : ''}`;
+        }
+    }
+}
+
+function clearSearch() {
+    searchInput.value = '';
+    filtrar();
+    searchInput.focus();
+}
+
+if (searchInput) {
+    searchInput.addEventListener('input', filtrar);
+    filtrar();
+}
+
+async function eliminar(id, nombre) {
+    if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+        const res = await fetch(`/api/equipos/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Equipo eliminado', `"${nombre}" fue removido del inventario.`);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast('Error', 'No se pudo eliminar el equipo.', 'error');
+        }
+    } catch { showToast('Error de red', 'Revisa tu conexión.', 'error'); }
+}
+</script>
+</body>
+</html>

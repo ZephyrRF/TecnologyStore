@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Nuevo Proveedor · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Nuevo Proveedor</h1>
+            <div class="subtitle">Registra un proveedor de equipos</div>
+        </div>
+        <a href="/proveedores" class="btn btn-ghost">← Volver</a>
+    </div>
+
+    <div class="card fade-up delay-1">
+        <form id="formCrear" class="form-grid">
+            <div class="form-group">
+                <label>Nombre de la Empresa *</label>
+                <input type="text" name="nombre_empresa" class="form-control" placeholder="Ej: Tech Supplies S.A." required>
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Persona de Contacto</label>
+                    <input type="text" name="contacto" class="form-control" placeholder="Nombre del contacto">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="+57 300 000 0000">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>País</label>
+                <input type="text" name="pais" class="form-control" placeholder="Ej: Colombia, México…">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Guardar Proveedor
+                </button>
+                <a href="/proveedores" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('formCrear').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    const data = Object.fromEntries(new FormData(e.target).entries());
+    try {
+        const res = await fetch('/api/proveedores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('¡Proveedor registrado!', `"${data.nombre_empresa}" fue guardado correctamente.`);
+            setTimeout(() => window.location.href = '/proveedores', 1600);
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast('Error al guardar', err.message || 'Verifica los campos.', 'error');
+            btn.disabled = false;
+        }
+    } catch { showToast('Error de red', 'No se pudo conectar.', 'error'); btn.disabled = false; }
+});
+</script>
+</body>
+</html>

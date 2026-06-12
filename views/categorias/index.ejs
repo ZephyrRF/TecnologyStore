@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Categorías · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Categorías</h1>
+            <div class="subtitle" id="contador"><%= categorias.length %> categoría<%= categorias.length !== 1 ? 's' : '' %></div>
+        </div>
+        <a href="/categorias/nuevo" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva Categoría
+        </a>
+    </div>
+
+    <!-- BARRA DE BÚSQUEDA -->
+    <div class="search-bar-wrap fade-up">
+        <div class="search-input-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Buscar por nombre o descripción…"
+                autocomplete="off"
+            />
+            <button class="search-clear" id="clearBtn" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+        </div>
+    </div>
+
+    <div class="table-wrap fade-up delay-1">
+        <% if (categorias.length === 0) { %>
+            <div class="empty">
+                <div class="empty-icon">🏷️</div>
+                <p>No hay categorías registradas aún.</p>
+            </div>
+        <% } else { %>
+        <table id="tablaCategorias">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyCategorias">
+                <% categorias.forEach(cat => { %>
+                <tr
+                    data-nombre="<%= (cat.nombre || '').toLowerCase() %>"
+                    data-descripcion="<%= (cat.descripcion || '').toLowerCase() %>"
+                >
+                    <td><span class="badge badge-purple"><%= cat.nombre %></span></td>
+                    <td style="color:var(--text-muted)"><%= cat.descripcion || '—' %></td>
+                    <td style="display:flex;gap:6px;">
+                        <a href="/categorias/editar/<%= cat._id %>" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="eliminar('<%= cat._id %>', '<%= cat.nombre %>')" class="btn btn-danger btn-sm">Borrar</button>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <div class="empty" id="sinResultados" style="display:none;">
+            <div class="empty-icon">🔍</div>
+            <p>No se encontraron categorías que coincidan con la búsqueda.</p>
+        </div>
+        <% } %>
+    </div>
+</div>
+<script>
+const searchInput   = document.getElementById('searchInput');
+const clearBtn      = document.getElementById('clearBtn');
+const tbody         = document.getElementById('tbodyCategorias');
+const sinResultados = document.getElementById('sinResultados');
+const contador      = document.getElementById('contador');
+const totalCategorias = <%= categorias.length %>;
+
+function filtrar() {
+    const q = searchInput.value.trim().toLowerCase();
+    clearBtn.style.display = q ? 'flex' : 'none';
+
+    if (!tbody) return;
+    const filas = tbody.querySelectorAll('tr');
+    let visibles = 0;
+
+    filas.forEach(fila => {
+        const campos = [fila.dataset.nombre, fila.dataset.descripcion];
+        const coincide = !q || campos.some(c => c && c.includes(q));
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+
+    if (sinResultados) {
+        sinResultados.style.display = (visibles === 0 && q) ? 'block' : 'none';
+    }
+
+    if (contador) {
+        if (q) {
+            contador.textContent = `${visibles} resultado${visibles !== 1 ? 's' : ''} de ${totalCategorias} categoría${totalCategorias !== 1 ? 's' : ''}`;
+        } else {
+            contador.textContent = `${totalCategorias} categoría${totalCategorias !== 1 ? 's' : ''}`;
+        }
+    }
+}
+
+function clearSearch() {
+    searchInput.value = '';
+    filtrar();
+    searchInput.focus();
+}
+
+if (searchInput) {
+    searchInput.addEventListener('input', filtrar);
+    filtrar();
+}
+
+async function eliminar(id, nombre) {
+    if (!confirm(`¿Eliminar la categoría "${nombre}"? Puede afectar a los equipos asociados.`)) return;
+    try {
+        const res = await fetch(`/api/categorias/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Categoría eliminada', `"${nombre}" fue removida.`);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast('Error', 'No se pudo eliminar.', 'error');
+        }
+    } catch { showToast('Error de red', 'Revisa tu conexión.', 'error'); }
+}
+</script>
+</body>
+</html>

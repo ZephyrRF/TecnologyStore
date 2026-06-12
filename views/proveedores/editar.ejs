@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Editar Proveedor · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Editar Proveedor</h1>
+            <div class="subtitle"><%= proveedor.nombre_empresa %></div>
+        </div>
+        <a href="/proveedores" class="btn btn-ghost">← Volver</a>
+    </div>
+
+    <div class="card fade-up delay-1">
+        <form id="editFormProv" class="form-grid">
+            <div class="form-group">
+                <label>Nombre de la Empresa *</label>
+                <input type="text" id="nombre_empresa" class="form-control" value="<%= proveedor.nombre_empresa %>" required>
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Persona de Contacto</label>
+                    <input type="text" id="contacto" class="form-control" value="<%= proveedor.contacto || '' %>">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="telefono" class="form-control" value="<%= proveedor.telefono || '' %>">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>País</label>
+                <input type="text" id="pais" class="form-control" value="<%= proveedor.pais || '' %>">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                <a href="/proveedores" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('editFormProv').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    const id = "<%= proveedor._id %>";
+    const data = {
+        nombre_empresa: document.getElementById('nombre_empresa').value,
+        contacto:       document.getElementById('contacto').value,
+        telefono:       document.getElementById('telefono').value,
+        pais:           document.getElementById('pais').value
+    };
+    try {
+        const res = await fetch(`/api/proveedores/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('¡Proveedor actualizado!', 'Los cambios fueron guardados.');
+            setTimeout(() => window.location.href = '/proveedores', 1600);
+        } else {
+            showToast('Error', 'No se pudo actualizar.', 'error');
+            btn.disabled = false;
+        }
+    } catch { showToast('Error de red', '', 'error'); btn.disabled = false; }
+});
+</script>
+</body>
+</html>

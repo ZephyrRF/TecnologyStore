@@ -1,0 +1,13 @@
+<nav class="navbar">
+    <a href="/equipos" class="brand">⚙ Inventario</a>
+    <a href="/equipos">Equipos</a>
+    <a href="/categorias">Categorías</a>
+    <a href="/proveedores">Proveedores</a>
+</nav>
+<script>
+    document.querySelectorAll('.navbar a:not(.brand)').forEach(a => {
+        if (window.location.pathname.startsWith(new URL(a.href).pathname)) {
+            a.classList.add('active');
+        }
+    });
+</script>

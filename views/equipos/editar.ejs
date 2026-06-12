@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Editar Equipo · Inventario</title>
+    <%- include('../layouts/head') %>
+</head>
+<body>
+<%- include('../layouts/navbar') %>
+<div class="page">
+    <div class="page-header fade-up">
+        <div>
+            <h1>Editar Equipo</h1>
+            <div class="subtitle"><%= equipo.nombre %></div>
+        </div>
+        <a href="/equipos" class="btn btn-ghost">← Volver</a>
+    </div>
+
+    <div class="card fade-up delay-1">
+        <form id="editForm" class="form-grid">
+            <div class="form-group">
+                <label>Nombre del Equipo *</label>
+                <input type="text" id="nombre" class="form-control" value="<%= equipo.nombre %>" required>
+            </div>
+            <div class="form-group">
+                <label>Marca</label>
+                <input type="text" id="marca" class="form-control" value="<%= equipo.marca || '' %>">
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Categoría *</label>
+                    <select id="categoria" class="form-control" required>
+                        <% categorias.forEach(cat => { %>
+                            <option value="<%= cat._id %>" <%= equipo.categoria && equipo.categoria._id && equipo.categoria._id.toString() === cat._id.toString() ? 'selected' : '' %>><%= cat.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Proveedor</label>
+                    <select id="proveedor" class="form-control">
+                        <option value="">Sin proveedor</option>
+                        <% proveedores.forEach(prov => { %>
+                            <option value="<%= prov._id %>" <%= equipo.proveedor && equipo.proveedor._id && equipo.proveedor._id.toString() === prov._id.toString() ? 'selected' : '' %>><%= prov.nombre_empresa %></option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+            <div class="form-grid cols-2">
+                <div class="form-group">
+                    <label>Precio</label>
+                    <input type="number" id="precio" class="form-control" value="<%= equipo.precio || '' %>" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" id="stock" class="form-control" value="<%= equipo.stock || '' %>" min="0">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                <a href="/equipos" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    const id = "<%= equipo._id %>";
+    const data = {
+        nombre:    document.getElementById('nombre').value,
+        marca:     document.getElementById('marca').value,
+        categoria: document.getElementById('categoria').value,
+        proveedor: document.getElementById('proveedor').value || undefined,
+        precio:    document.getElementById('precio').value,
+        stock:     document.getElementById('stock').value
+    };
+    if (!data.proveedor) delete data.proveedor;
+    try {
+        const res = await fetch(`/api/equipos/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('¡Equipo actualizado!', `Los cambios fueron guardados correctamente.`);
+            setTimeout(() => window.location.href = '/equipos', 1600);
+        } else {
+            showToast('Error al actualizar', 'Verifica los campos.', 'error');
+            btn.disabled = false;
+        }
+    } catch { showToast('Error de red', 'No se pudo conectar.', 'error'); btn.disabled = false; }
+});
+</script>
+</body>
+</html>
